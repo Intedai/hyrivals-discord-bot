@@ -1,0 +1,21 @@
+[project]
+name = "hyrivals-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Intedai", email = "69306633+Intedai@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "discord-py>=2.6.4",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+]
+
+[project.scripts]
+bot = "hyrivals_bot.main:main"
+
+[build-system]
+requires = ["uv_build>=0.10.6,<0.11.0"]
+build-backend = "uv_build"
