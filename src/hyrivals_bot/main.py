@@ -1,7 +1,10 @@
+from os import getenv
+from dotenv import load_dotenv
 from .CardGenerator import CardGenerator, ASSETS_PATH
 from .HyrivalsApi import PlayerNotFound
+from .bot import HyrivalsBot
 
-def main():
+def tmp_gen_card():
     card_gen = CardGenerator(
         card_bg_path = ASSETS_PATH / "card_bg.png",
         hyrivals_logo_path = ASSETS_PATH / "logo.png",
@@ -18,3 +21,15 @@ def main():
         card_gen.generate_card(user).show()
     except PlayerNotFound:
         print("player not found")
+
+def main():
+    load_dotenv()
+
+    BOT_TOKEN = getenv("BOT_TOKEN")
+    SERVER_ID = getenv("SERVER_ID")
+
+    if BOT_TOKEN:
+        bot = HyrivalsBot(SERVER_ID)
+        bot.run(token=BOT_TOKEN)
+    else:
+        print("please use BOT_TOKEN in the .env file")
