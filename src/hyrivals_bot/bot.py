@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from .CardGenerator import CardGenerator
+from .HyrivalsApi import get_player_count
+from discord.ext import tasks
 
 HYRIVALS_IP = "play.hyrivals.gg"
 HYRIVALS_PNG_URL = "https://hyrivals.gg/logo.png"
@@ -19,16 +21,30 @@ class HyrivalsBot(commands.Bot):
         super().__init__(
             command_prefix = "!",
             intents = intents,
-            activity = discord.Game(name="/test for now")
         )
         
         if server_id and server_id.isdigit():
             self.discord_guild = discord.Object(id=str(server_id))
         else:
             self.discord_guild = None
-
+        
     async def on_ready(self) -> None:
         print(f'Logged in as {self.user}: <{self.user.id}>')
+
+    # Bot's activity:
+    @tasks.loop(seconds=60)
+    async def update_activity(self):
+        try:
+            total_players = get_player_count()["total"]
+            activity = f"🟢 {total_players} ONLINE"
+            await self.change_presence(activity=discord.Game(name = activity))
+            print(f"Activity updated to: {activity}")
+        except Exception as e:
+            print(f"Failed to update activity: {e}")
+    
+    @update_activity.before_loop
+    async def before_update_activity(self):
+        await self.wait_until_ready()
 
     async def setup_hook(self) -> None:
         await self.load_extension("hyrivals_bot.cogs.hyrivals_commands")
@@ -42,6 +58,9 @@ class HyrivalsBot(commands.Bot):
             print(f"Synced {len(synced)} commands to Guild: <{self.discord_guild.id}>")
         else:
             print(f"Synced {len(synced)} global commands")
+        
+        # Start the activity loop
+        self.update_activity.start()
 
     def make_embed(self, title: str, msg: str, is_error = False) -> discord.Embed:
         color = self.embed_color if not is_error else self.embed_error_color
