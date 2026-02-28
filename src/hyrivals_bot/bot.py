@@ -8,12 +8,13 @@ HYRIVALS_PNG_URL = "https://hyrivals.gg/logo.png"
 class HyrivalsBot(commands.Bot):
     user: discord.ClientUser
 
-    def __init__(self, card_generator: CardGenerator, embed_color = 0xFFF, server_id: str = "") -> None:
+    def __init__(self, card_generator: CardGenerator, embed_color = 0xFFF, embed_error_color = 0xFF0000, server_id: str = "") -> None:
         intents = discord.Intents.default()
         intents.message_content = True
 
         self.card_generator = card_generator
         self.embed_color = embed_color
+        self.embed_error_color = embed_error_color
 
         super().__init__(
             command_prefix = "!",
@@ -42,8 +43,10 @@ class HyrivalsBot(commands.Bot):
         else:
             print(f"Synced {len(synced)} global commands")
 
-    def make_embed(self, title: str, msg: str) -> discord.Embed:
-        embed = discord.Embed(title=title, description=msg, color=self.embed_color)
+    def make_embed(self, title: str, msg: str, is_error = False) -> discord.Embed:
+        color = self.embed_color if not is_error else self.embed_error_color
+
+        embed = discord.Embed(title=title, description=msg, color=color)
         embed.set_author(name=HYRIVALS_IP, icon_url=HYRIVALS_PNG_URL)
 
         return embed

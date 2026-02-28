@@ -15,6 +15,7 @@ def main():
 
     bot_color = (249, 226, 76)
     bot_color_int = bot_color[0] << 16 | bot_color[1] << 8 | bot_color[2]
+    error_color_int = 0xCC322A
 
     card_gen = CardGenerator(
         card_bg_path = ASSETS_PATH / "card_bg.png",
@@ -28,5 +29,5 @@ def main():
         layout_lines = 6
     )
 
-    bot = HyrivalsBot(card_gen, bot_color_int, SERVER_ID)
+    bot = HyrivalsBot(card_gen, bot_color_int, error_color_int, SERVER_ID)
     bot.run(token=BOT_TOKEN)

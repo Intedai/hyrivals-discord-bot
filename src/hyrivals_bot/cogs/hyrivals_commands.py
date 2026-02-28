@@ -12,15 +12,24 @@ class HyrivalsCommands(commands.Cog):
     @app_commands.command(name="stats", description="Get player stats.")
     async def stats_card(self, interaction: discord.Interaction, player: str):
         await interaction.response.defer(thinking=True)
+        title = "PLAYER STATS"
         try:
             with BytesIO() as image_binary:
                 self.bot.card_generator.generate_card(player).save(image_binary, 'PNG')
                 image_binary.seek(0)
                 await interaction.followup.send(file=discord.File(fp=image_binary, filename=f"{player}.png"))
         except PlayerNotFound:
-            await interaction.followup.send("Player not found")
+            await interaction.followup.send(embed=self.bot.make_embed(
+                title,
+                "Player not found.",
+                is_error=True
+            ))
         except Exception as e:
-            await interaction.followup.send(f"Failed to get player stats.\nPython: {e}")
+            await interaction.followup.send(embed=self.bot.make_embed(
+                title,
+                f"Failed to get player stats.\nPython: {e}",
+                is_error=True
+            ))
     
     @app_commands.command(name="vote", description="Get the daily vote links.")
     async def vote_links(self, interaction: discord.Interaction):
@@ -43,7 +52,7 @@ class HyrivalsCommands(commands.Cog):
     @app_commands.command(name="online", description="Show detailed player count.")
     async def player_count(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
-
+        title = "ONLINE PLAYERS"
         try:
             data = get_player_count()
             data_representation = [
@@ -54,11 +63,14 @@ class HyrivalsCommands(commands.Cog):
             ]
 
             msg = "\n".join(f"🟢 {title}: {count}" for title, count in data_representation)
-            embed = self.bot.make_embed("ONLINE PLAYERS", msg)
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=self.bot.make_embed(title, msg))
         except Exception as e:
-            await interaction.followup.send(f"Failed to get player count.\nPython: {e}")
+            await interaction.followup.send(embed=self.bot.make_embed(
+                title,
+                f"Failed to get player count.\nPython: {e}",
+                is_error=True
+            ))
 
 async def setup(bot: HyrivalsBot) -> None:
     await bot.add_cog(HyrivalsCommands(bot))
