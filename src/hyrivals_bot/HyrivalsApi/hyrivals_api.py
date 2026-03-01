@@ -3,10 +3,21 @@ import requests
 class PlayerNotFound(Exception):
     pass
 
+def get_leaderboard(page: int, limit: int, mode: str) -> dict:
+
+    if mode.lower() not in ("duels, kitpvp"):
+        raise ValueError("mode must be duels or kitpvp")
+    
+    sort_by = "elo" if mode == "duels" else "kd"
+
+    url = f"https://api.hyrivals.gg/leaderboards/{mode}?page={page}&limit={limit}&sort={sort_by}&order=desc"
+    
+    return requests.get(url=url).json()
+
 def get_stats(username: str, mode: str) -> dict:
 
     if mode.lower() not in ("duels, kitpvp"):
-        raise ValueError
+        raise ValueError("mode must be duels or kitpvp")
 
     resp = requests.get(f"https://api.hyrivals.gg/leaderboards/{mode}?page=1&limit=20&search={username}").json()
     players = resp["entries"]
