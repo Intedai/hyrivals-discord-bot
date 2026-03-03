@@ -4,7 +4,7 @@ from discord.ext import commands
 from io import BytesIO
 from typing import Literal
 from hyrivals_bot.bot import HyrivalsBot
-from hyrivals_bot.HyrivalsApi import get_player_count, PlayerNotFound, get_leaderboard
+from hyrivals_bot.HyrivalsApi import get_player_count, PlayerNotFound, get_leaderboard, get_duels_classes
 
 class HyrivalsCommands(commands.Cog):
     def __init__(self, bot: HyrivalsBot) -> None:
@@ -73,16 +73,44 @@ class HyrivalsCommands(commands.Cog):
                 is_error=True
             ))
 
+    class DuelClassMenu(discord.ui.Select):
+        def __init__(self) -> None:
+            self.classes = {"all": "All Classes"}
+            self.classes.update(get_duels_classes())
+
+            options = [
+                discord.SelectOption(
+                    label=self.classes[duels_class],
+                    value=duels_class
+                ) for duels_class in self.classes
+            ]
+            super().__init__(placeholder="Choose a class", min_values=1, max_values=1, options=options, row=0)
+
+        async def callback(self, interaction: discord.Interaction) -> None:
+            await interaction.response.defer()
+            if self.values[0] == "all":
+                self.view.duels_class = None
+            else:
+                self.view.duels_class = self.values[0]
+            
+            self.view.page = 1
+            await interaction.edit_original_response(embed=self.view.embed_func(1), view=self.view)
+                
+            
     class LeaderboardButtons(discord.ui.View):
-        def __init__(self, *, interaction: discord.Interaction, start_page: int, max_page: int, embed_func: callable, timeout: float = 180.0):
+        def __init__(self, *, interaction: discord.Interaction, is_duels: bool, start_page: int, timeout: float = 180.0):
             self.page = start_page
-            self.max_page = max_page
-            self.embed_func = embed_func
+            self.max_page = 0
+            self.duels_class= None
+            self.embed_func = None
             self.paginate_btns = lambda : self.update_buttons(self.page == 1, self.page == self.max_page)
             self.command_executor = interaction.user
             self.message = None
 
             super().__init__(timeout=timeout)
+            
+            if is_duels:
+                self.add_item(HyrivalsCommands.DuelClassMenu())
 
         async def interaction_check(self, interaction: discord.Interaction) -> bool:
             if interaction.user != self.command_executor:
@@ -94,22 +122,20 @@ class HyrivalsCommands(commands.Cog):
             self.update_buttons(True, True)
             if self.message:
                 await self.message.edit(view=self)
-    
-        @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.blurple, disabled=True)
+
+        @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.blurple, disabled=True, row=1)
         async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
 
             self.page = max(self.page - 1, 1)
-            self.paginate_btns()
 
             await interaction.edit_original_response(embed=self.embed_func(self.page), view=self)
 
-        @discord.ui.button(emoji="▶️", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(emoji="▶️", style=discord.ButtonStyle.blurple, row=1)
         async def forward(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
             await interaction.response.defer()
 
             self.page = min(self.page + 1,self.max_page)
-            self.paginate_btns()
 
             await interaction.edit_original_response(embed=self.embed_func(self.page), view=self)
 
@@ -124,12 +150,18 @@ class HyrivalsCommands(commands.Cog):
     async def leaderboard(self, interaction: discord.Interaction, mode: Literal["duels", "kitpvp"]) -> None:
         await interaction.response.defer(thinking=True)
         title = "LEADERBOARD"
-        max_page: int
+
+        btns = self.LeaderboardButtons(
+            interaction=interaction,
+            is_duels=mode == "duels",
+            start_page=1
+        )
 
         def leader_board_embed(page: int) -> discord.Embed:
-            leaderboard = get_leaderboard(page, 10, mode)
-            nonlocal max_page
-            max_page = leaderboard["pagination"]["totalPages"]
+
+            leaderboard = get_leaderboard(page, 10, mode, btns.duels_class)
+            btns.max_page = leaderboard["pagination"]["totalPages"]
+            btns.paginate_btns()
 
             if mode == "duels":
                 entries = "\n".join(
@@ -143,17 +175,14 @@ class HyrivalsCommands(commands.Cog):
                 )                
 
             embed = self.bot.make_embed(title, msg=entries)
-            embed.set_footer(text=f"PAGE: [ {leaderboard["pagination"]["page"]} / {max_page} ]") 
+            embed.set_footer(text=f"PAGE: [ {leaderboard["pagination"]["page"]} / {btns.max_page} ]") 
             
             return embed
 
+        btns.embed_func = leader_board_embed
+
         try:
-            await interaction.followup.send(embed=leader_board_embed(1), view = (btns := self.LeaderboardButtons(
-                interaction=interaction,
-                start_page=1,
-                max_page=max_page,
-                embed_func=leader_board_embed
-            )))
+            await interaction.followup.send(embed=leader_board_embed(1), view = btns)
             btns.message = await interaction.original_response()
         except Exception as e:
             await interaction.followup.send(embed=self.bot.make_embed(
