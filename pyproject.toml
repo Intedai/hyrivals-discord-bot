@@ -1,7 +1,7 @@
 [project]
 name = "hyrivals-bot"
 version = "0.1.0"
-description = "Add your description here"
+description = "Discord bot for the Hyrivals Discord Server."
 readme = "README.md"
 authors = [
     { name = "Intedai", email = "69306633+Intedai@users.noreply.github.com" }
