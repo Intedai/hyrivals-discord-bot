@@ -19,7 +19,9 @@ class HyrivalsBot(commands.Bot):
         self.embed_error_color = embed_error_color
 
         super().__init__(
-            command_prefix = "!",
+            # No command prefixes, only slash commands
+            command_prefix = [],
+            help_command=None,
             intents = intents,
         )
         
