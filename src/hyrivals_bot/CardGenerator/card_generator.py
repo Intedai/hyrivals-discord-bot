@@ -14,6 +14,7 @@ class CardGenerator:
         font_size: int,
         color: tuple[int, int, int],
         pfp_bg_color: tuple[int, int, int],
+        pfp_opacity: int,
         pfp_size: int,
         border_size: int,
         layout_lines: int
@@ -36,7 +37,7 @@ class CardGenerator:
         self.font.set_variation_by_name("ExtraBold")
 
         self.color = color
-        self.pfp_bg_color = pfp_bg_color
+        self.pfp_bg_color = pfp_bg_color + (pfp_opacity,)
         self.pfp_size = pfp_size
         self.border_size = border_size
         self.layout_lines = layout_lines
